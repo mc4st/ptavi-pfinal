@@ -8,6 +8,29 @@ import sys
 import json
 import time
 
+class ExtraerXML (ContentHandler):
+     def __init__(self):
+        self.taglist = []
+        self.dicctags = [
+            'server', 'database', 'log']
+        self.diccattributes = {
+            'server': ['name', 'ip', 'puerto'],
+            'database': ['path', 'passwdpath'],
+            'log': ['path']}
+
+    def startElement(self, tag, attrs):
+        dicc = {}
+        # si existe la etiqueta en mi lista de etiquetas.
+        if tag in self.dicctags:
+            # recorro todos los atributos, guardo en diccionario.
+            for attribute in self.diccattributes[tag]:
+                dicc[attribute] = attrs.get(attribute, "")
+            # voy encadenando la lista, guardo a continuación sin sustituir
+            # lo que tiene dentro.
+            self.taglist.append([tag, dicc])
+
+    def get_tags(self):
+        return self.taglist
 
 class SIPRegisterHandler(socketserver.DatagramRequestHandler):
     """
