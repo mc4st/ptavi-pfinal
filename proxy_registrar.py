@@ -8,10 +8,13 @@ import sys
 import json
 import time
 
+from xml.sax import make_parser
+from xml.sax.handler import ContentHandler
+
 class ExtraerXML (ContentHandler):
-     def __init__(self):
+    def __init__(self):
         self.taglist = []
-        self.dicctags = [
+        self.tags = [
             'server', 'database', 'log']
         self.diccattributes = {
             'server': ['name', 'ip', 'puerto'],
@@ -19,12 +22,18 @@ class ExtraerXML (ContentHandler):
             'log': ['path']}
 
     def startElement(self, tag, attrs):
-        dicc = {}
         # si existe la etiqueta en mi lista de etiquetas.
-        if tag in self.dicctags:
+        if tag in self.tags:
             # recorro todos los atributos, guardo en diccionario.
+            dicc = {}
             for attribute in self.diccattributes[tag]:
-                dicc[attribute] = attrs.get(attribute, "")
+                if attribute == 'ip':
+                    dicc[attribute] = attrs.get(attribute, "")
+                    ip_server = dicc[attribute]
+                    if ip_server == "":
+                        ip_server = "127.0.0.1"
+                else:
+                    dicc[attribute] = attrs.get(attribute, "")
             # voy encadenando la lista, guardo a continuación sin sustituir
             # lo que tiene dentro.
             self.taglist.append([tag, dicc])
@@ -89,9 +98,9 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
             self.register2json()
 
 if __name__ == "__main__":
-    PORT = int(sys.argv[1])
-    serv = socketserver.UDPServer(('', PORT), SIPRegisterHandler)
-    print("Lanzando servidor UDP de eco...")
-    serv.allow_reuse_address = True
-    serv.serve_forever()
-    serv.close()
+    #serv = SocketServer.UDPServer((ip, int(port)), SIPRegisterHandler)
+    #print("Lanzando servidor UDP de eco...")
+    #serv.allow_reuse_address = True
+    #serv.serve_forever()
+    #serv.close()
+    pass
