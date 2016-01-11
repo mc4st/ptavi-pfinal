@@ -11,23 +11,19 @@ import time
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 
-# Cliente UDP simple.
-
 # Dirección IP del servidor.
 if len(sys.argv) == 4:
     configXML = sys.argv[1]
     METHOD = sys.argv[2]
     option = sys.argv[3]
-    #(receptor, SIPport) = direction.split(":")
-    #SIPport = int(SIPport)
-    #(name, SERVER) = receptor.split("@")
 else:
     sys.exit("Usage: client.py config method opcion")
+
 # Creamos extraer fichero xml
 class ExtraerXML (ContentHandler):
-     def __init__(self):
+    def __init__(self):
         self.taglist = []
-        self.dicctags = [
+        self.tags = [
             'account', 'uaserver', 'rtpaudio', 'regproxy', 'log', 'audio']
         self.diccattributes = {
             'account': ['username', 'passwd'],
@@ -36,11 +32,11 @@ class ExtraerXML (ContentHandler):
             'regproxy': ['ip', 'puerto'],
             'log': ['path'],
             'audio': ['path']}
-
+            
     def startElement(self, tag, attrs):
         dicc = {}
         # si existe la etiqueta en mi lista de etiquetas.
-        if tag in self.dicctags:
+        if tag in self.tags:
             # recorro todos los atributos, guardo en diccionario.
             for attribute in self.diccattributes[tag]:
                 dicc[attribute] = attrs.get(attribute, "")
@@ -63,17 +59,18 @@ audio_port = listXML[2][1]['puerto']
 proxy_ip = listXML[3][1]['ip']
 proxy_port = int(listXML[3][1]['puerto'])
 
-if uaip == "":
-    uaip = '127.0.0.1'
+if ua_ip == "":
+    ua_ip = '127.0.0.1'
 
-if METODO == 'REGISTER':
+# Según el tpo de método que recibamos (REGISTER, INVITE, BYE)
+if METHOD == 'REGISTER':
     # [1] porque es el diccionario y no la etiqueta
     #REGISTER sip:leonard@bigbang.org:1234 SIP/2.0
     #Expires: 3600
     PETICION = METHOD + " sip:" + user + ":" + ua_port + ": SIP/2.0\r\n"
     PETICION += "Expires: " + option + "\r\n\r\n"
 
-elif METODO == 'INVITE':
+elif METHOD == 'INVITE':
     # INVITE sip:penny@girlnextdoor.com SIP/2.0
     #Content-Type: application/sdp
     #v=0
@@ -89,7 +86,7 @@ elif METODO == 'INVITE':
     PETICION += "t=0\r\n"
     PETICION += "m=audio8 " + audio_port + " RTP\r\n\r\n"
 
-elif METODO == 'BYE':
+elif METHOD == 'BYE':
     PETICION = METHOD + " sip:" + option + " SIP/2.0\r\n\r\n"
 
 # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
@@ -97,7 +94,7 @@ my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 my_socket.connect((proxy_ip, proxy_port))
 
-# Contenido que vamos a enviar
+# Contenido que vamos a enviar (similar práctica anterior)
 print("Enviando: " + PETICION)
 my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
 data = my_socket.recv(1024)
