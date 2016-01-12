@@ -96,7 +96,7 @@ elif METHOD == 'INVITE':
 
 elif METHOD == 'BYE':
     PETICION = METHOD + " sip:" + option + " SIP/2.0\r\n\r\n"
-
+    
 # Contenido que vamos a enviar (similar práctica anterior)
 print("Enviando: " + PETICION)
 my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
