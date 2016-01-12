@@ -1,5 +1,5 @@
 <config>
-      <server name = "MiServidorGuay" ip = "localhost" puerto = "8001" />
+      <server name = "MiServidorGuay" ip = "localhost" puerto = "5555" />
       <database path = "ua1.xml, ua2.xml" passwdpath = "uas" />
       <log path = ""/>
 </config>
