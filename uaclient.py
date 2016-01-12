@@ -8,6 +8,8 @@ import socket
 import sys
 import os
 import time
+import hashlib
+
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 
@@ -32,7 +34,7 @@ class ExtraerXML (ContentHandler):
             'regproxy': ['ip', 'puerto'],
             'log': ['path'],
             'audio': ['path']}
-            
+
     def startElement(self, tag, attrs):
         dicc = {}
         # si existe la etiqueta en mi lista de etiquetas.
@@ -53,11 +55,17 @@ parser.setContentHandler(XMLHandler)
 parser.parse(open(configXML))
 listXML = XMLHandler.get_tags()
 user = listXML[0][1]['username']
+passwd = listXML[0][1]['passwd']
 ua_port = listXML[1][1]['puerto']
 ua_ip = listXML[1][1]['ip']
 audio_port = listXML[2][1]['puerto']
 proxy_ip = listXML[3][1]['ip']
 proxy_port = int(listXML[3][1]['puerto'])
+
+# Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
+my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+my_socket.connect((proxy_ip, proxy_port))
 
 if ua_ip == "":
     ua_ip = '127.0.0.1'
@@ -67,8 +75,8 @@ if METHOD == 'REGISTER':
     # [1] porque es el diccionario y no la etiqueta
     #REGISTER sip:leonard@bigbang.org:1234 SIP/2.0
     #Expires: 3600
-    PETICION = METHOD + " sip:" + user + ":" + ua_port + ": SIP/2.0\r\n"
-    PETICION += "Expires: " + option + "\r\n\r\n"
+    PETICION = METHOD + " sip:" + user + ":" + ua_port + " SIP/2.0" + "\r\n"
+    PETICION += "Expires: " + option + "\r\n"
 
 elif METHOD == 'INVITE':
     # INVITE sip:penny@girlnextdoor.com SIP/2.0
@@ -89,24 +97,33 @@ elif METHOD == 'INVITE':
 elif METHOD == 'BYE':
     PETICION = METHOD + " sip:" + option + " SIP/2.0\r\n\r\n"
 
-# Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
-my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-my_socket.connect((proxy_ip, proxy_port))
-
 # Contenido que vamos a enviar (similar práctica anterior)
 print("Enviando: " + PETICION)
 my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
-data = my_socket.recv(1024)
+data = my_socket.recv(proxy_port)
 
 print('Recibido -- ', data.decode('utf-8'))
 datosrecibidos = data.decode('utf-8')
 datos = datosrecibidos.split()
-if datos[1] == "100" and datos[4] == "180" and datos[7] == "200":
-    METHOD = "ACK"
-    PETICION = METHOD + " sip:" + option + " " + "SIP/2.0"
-    print("Enviando: " + PETICION)
-    my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
+if METHOD == "REGISTER":
+    if datos[1] == "401":
+        METHOD = "REGISTER"
+        PETICION = METHOD + " sip:" + user + ":" + ua_port + ": SIP/2.0" + "\r\n"
+        PETICION += "Expires: " + option + "\r\n"
+        nonce = datos[5]
+        nonce_bytes = bytes(nonce, 'utf-8')
+        passwd_bytes = bytes(passwd, 'utf-8')
+        m = hashlib.md5()
+        m.update(passwd_bytes + nonce_bytes)
+        response = m.hexdigest()
+        PETICION += "Authorization: response= " + response
+        my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
+elif METHOD == "INVITE":
+    if datos[1] == "100" and datos[4] == "180" and datos[7] == "200":
+        METHOD = "ACK"
+        PETICION = METHOD + " sip:" + option + " " + "SIP/2.0"
+        print("Enviando: " + PETICION)
+        my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
 
 print("Terminando socket...")
 
