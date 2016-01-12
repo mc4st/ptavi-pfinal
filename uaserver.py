@@ -8,6 +8,9 @@ import socketserver
 import sys
 import os
 
+from xml.sax import make_parser
+from xml.sax.handler import ContentHandler
+
 if len(sys.argv) == 2:
     configXML = sys.argv[1]
 else:
@@ -51,7 +54,7 @@ ua_ip = listXML[1][1]['ip']
 audio_port = listXML[2][1]['puerto']
 proxy_ip = listXML[3][1]['ip']
 proxy_port = int(listXML[3][1]['puerto'])
-audio = int(listXML[5][1]['path'])
+fich_audio = listXML[5][1]['path']
 
 class EchoHandler(socketserver.DatagramRequestHandler):
     """
@@ -65,17 +68,28 @@ class EchoHandler(socketserver.DatagramRequestHandler):
             if not line:
                 break
             print("El cliente nos manda: \n" + line_bytes.decode('utf-8'))
-            (metodo, address, sip) = line.split()
-            if metodo not in ["INVITE", "BYE", "ACK"]:
+            if not line:
+                break
+            list_recv = line.split()
+            METHOD = list_recv[0]
+            if METHOD not in ["INVITE", "BYE", "ACK"]:
                 self.wfile.write(b"SIP/2.0 405 Method Not Allowed" + b"\r\n" +
                                  b"\r\n")
-            elif metodo == "INVITE":
+            elif METHOD == "INVITE":
                 self.wfile.write(b"SIP/2.0 100 Trying" + b"\r\n" + b"\r\n")
                 self.wfile.write(b"SIP/2.0 180 Ring" + b"\r\n" + b"\r\n")
+                PETICION = "SIP/2.0 200 OK" + "\r\n" + "\r\n"
+                PETICION += "Content-Type: application/sdp\r\n\r\n"
+                PETICION += "v=0\r\n"
+                PETICION += "o=" + user + " " + ua_ip + "\r\n"
+                PETICION += "s=misesion\r\n"
+                PETICION += "t=0\r\n"
+                PETICION += "m=audio8 " + audio_port + " RTP\r\n\r\n"
+                self.wfile.write(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
+            elif METHOD == "BYE":
                 self.wfile.write(b"SIP/2.0 200 OK" + b"\r\n" + b"\r\n")
-            elif metodo == "BYE":
-                self.wfile.write(b"SIP/2.0 200 OK" + b"\r\n" + b"\r\n")
-            elif metodo == "ACK":
+            elif METHOD == "ACK":
+                print("recibo ACK")
                 aEjecutar = './mp32rtp -i ' + IP + ' -p 23032 < ' + fich_audio
                 print("Vamos a ejecutar: ", aEjecutar)
                 os.system(aEjecutar)
@@ -84,6 +98,6 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                                  b"\r\n")
 if __name__ == "__main__":
     # Creamos servidor de eco y escuchamos
-    serv = socketserver.UDPServer((ua_ip, ua_port), EchoHandler)
-    print("Lanzando servidor UDP de eco...")
+    serv = socketserver.UDPServer((ua_ip, int(ua_port)), EchoHandler)
+    print("Listening...")
     serv.serve_forever()
