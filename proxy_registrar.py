@@ -97,6 +97,9 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 break
             list_recv = line.split()
             METHOD = list_recv[0]
+            if METHOD not in ["REGISTER", "INVITE", "BYE", "ACK"]:
+                self.wfile.write(b"SIP/2.0 405 Method Not Allowed" + b"\r\n" +
+                                 b"\r\n")
             if METHOD == "REGISTER":
                 address_port = list_recv[1]
                 address_divided = address_port.split(':')
@@ -104,16 +107,16 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 port = address_divided[2]
                 expires = list_recv[4]
                 if len(list_recv) == 5:
-                    PETICION = "SIP/2.0 401 Unauthorized" + "\r\n"
-                    nonce = random.randint(100000000000000000000, 999999999999999999999)
-                    PETICION += "WWW Authenticate: nonce=" + str(nonce) + "\r\n"
-                    self.wfile.write(bytes(PETICION, 'utf-8') + b"\r\n" + b"\r\n")
-                time_now = int(time.time()) + int(expires)
-                time_expires = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time_now))
-                if int(expires) == 0:
-                    del self.DiccServer[address]
-                else:
-                    self.DiccServer[address] = [str(IP), port, expires, str(time_expires)]
+                    if int(expires) == 0:
+                        del self.DiccServer[address]
+                    else:
+                        time_now = int(time.time()) + int(expires)
+                        time_expires = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time_now))
+                        self.DiccServer[address] = [str(IP), port, expires, str(time_expires)]
+                        PETICION = "SIP/2.0 401 Unauthorized" + "\r\n"
+                        nonce = random.randint(100000000000000000000, 999999999999999999999)
+                        PETICION += "WWW Authenticate: nonce=" + str(nonce) + "\r\n"
+                        self.wfile.write(bytes(PETICION, 'utf-8') + b"\r\n" + b"\r\n")
                 self.wfile.write(b"SIP/2.0 200 OK" + b"\r\n" + b"\r\n")
                 self.deleteDiccServer()
                 self.register2json()
@@ -148,6 +151,25 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 my_socket.connect((ua_ip, ua_port))
                 my_socket.send(bytes(line, 'utf-8') + b'\r\n' + b'\r\n')
+            elif METHOD == "BYE":
+                address_sip = list_recv[1]
+                address_divided = address_sip.split(':')
+                address = address_divided[1]
+                if address in self.DiccServer:
+                    ua_ip = self.DiccServer[address][0]
+                    ua_port = int(self.DiccServer[address][1])
+                    # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
+                    my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                    my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                    my_socket.connect((ua_ip, ua_port))
+
+                    my_socket.send(bytes(line, 'utf-8') + b'\r\n' + b'\r\n')
+                    data = my_socket.recv(ua_port)
+                    print('Recibido -- ', data.decode('utf-8'))
+                    datosrecibidos = data.decode('utf-8')
+                    datos = datosrecibidos.split()
+                    self.wfile.write(bytes(datosrecibidos, 'utf-8') + b'\r\n' + b'\r\n')
+
 if __name__ == "__main__":
     serv = socketserver.UDPServer((ip_server, int(port_server)), SIPRegisterHandler)
     print("Server MiServidorBingBang listening at port 5555...")
