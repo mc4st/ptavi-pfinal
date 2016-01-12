@@ -9,6 +9,8 @@ import sys
 import json
 import time
 import random
+import hashlib
+
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
 
@@ -83,6 +85,18 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
         for usuario in new_list:
             del self.DiccServer[usuario]
 
+    def SearchPasswd(self, dir_user):
+        fich_passwd = open("passwd.txt")
+        datos_user = fich_passwd.read()
+        passwd = ''
+        for line in datos_user.split('\n'):
+            if line != '':
+                user_fich = line.split(" ")[0]
+                passwd_fich = line.split(" ")[1]
+                if user_fich == dir_user:
+                    passwd = passwd_fich
+        return passwd
+
     def handle(self):
         IP = self.client_address[0]
         PORT =  self.client_address[1]
@@ -106,6 +120,8 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 address = address_divided[1]
                 port = address_divided[2]
                 expires = list_recv[4]
+                nonce = random.randint(100000000000000000000, 999999999999999999999)
+                print(list_recv)
                 if len(list_recv) == 5:
                     if int(expires) == 0:
                         del self.DiccServer[address]
@@ -114,9 +130,21 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                         time_expires = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time_now))
                         self.DiccServer[address] = [str(IP), port, expires, str(time_expires)]
                         PETICION = "SIP/2.0 401 Unauthorized" + "\r\n"
-                        nonce = random.randint(100000000000000000000, 999999999999999999999)
                         PETICION += "WWW Authenticate: nonce=" + str(nonce) + "\r\n"
                         self.wfile.write(bytes(PETICION, 'utf-8') + b"\r\n" + b"\r\n")
+                if len(list_recv) == 8:
+                    #comparar response que llega del client con el response creado por pr
+                    response_recv = list_recv[7]
+                    print(response_recv)
+                    passwd_fich = self.SearchPasswd(address)
+                    passwd = bytes(str(passwd_fich))
+                    nonce_bytes = bytes(nonce)
+                    print(passwd)
+                    m = hashlib.md5()
+                    m.update(passwd + nonce)
+                    response_new = m.hexdigest()
+                    print(response_new)
+
                 self.wfile.write(b"SIP/2.0 200 OK" + b"\r\n" + b"\r\n")
                 self.deleteDiccServer()
                 self.register2json()
