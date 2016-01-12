@@ -60,6 +60,7 @@ class EchoHandler(socketserver.DatagramRequestHandler):
     """
     Echo server class
     """
+    dicc_rtp = {'ip_client': '','port_client': 0}
     def handle(self):
         # Escribe dirección y puerto del cliente (de tupla client_address)
         while 1:
@@ -75,7 +76,11 @@ class EchoHandler(socketserver.DatagramRequestHandler):
             if METHOD not in ["INVITE", "BYE", "ACK"]:
                 self.wfile.write(b"SIP/2.0 405 Method Not Allowed" + b"\r\n" +
                                  b"\r\n")
+
             elif METHOD == "INVITE":
+                print(list_recv)
+                self.dicc_rtp['ip_client'] = list_recv[7]
+                self.dicc_rtp['port_client'] = list_recv[11]
                 self.wfile.write(b"SIP/2.0 100 Trying" + b"\r\n" + b"\r\n")
                 self.wfile.write(b"SIP/2.0 180 Ring" + b"\r\n" + b"\r\n")
                 PETICION = "SIP/2.0 200 OK" + "\r\n" + "\r\n"
@@ -89,8 +94,9 @@ class EchoHandler(socketserver.DatagramRequestHandler):
             elif METHOD == "BYE":
                 self.wfile.write(b"SIP/2.0 200 OK" + b"\r\n" + b"\r\n")
             elif METHOD == "ACK":
-                print("recibo ACK")
-                aEjecutar = './mp32rtp -i ' + IP + ' -p 23032 < ' + fich_audio
+                aEjecutar = './mp32rtp -i ' + self.dicc_rtp['ip_client']
+                aEjecutar += ' -p' + self.dicc_rtp['port_client'] + '<'
+                aEjecutar += fich_audio
                 print("Vamos a ejecutar: ", aEjecutar)
                 os.system(aEjecutar)
             else:
