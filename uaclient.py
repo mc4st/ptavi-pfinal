@@ -109,11 +109,11 @@ elif METHOD == 'BYE':
 # Contenido que vamos a enviar (similar práctica anterior)
 # Envio al log
 hora = time.time()
-evento = "Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
-evento += PETICION + '\r\n'
+evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
+evento += PETICION
 log('', hora, evento)
-print(" Enviando: " + PETICION)
-my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
+print("Enviando: " + PETICION)
+my_socket.send(bytes(PETICION, 'utf-8'))
 data = my_socket.recv(proxy_port)
 
 print('Recibido -- ', data.decode('utf-8'))
@@ -128,21 +128,40 @@ if METHOD == "REGISTER":
         METHOD = "REGISTER"
         PETICION = METHOD + " sip:" + user + ":" + ua_port + ": SIP/2.0" + "\r\n"
         PETICION += "Expires: " + option + "\r\n"
-        nonce = datos[5]
+        nonce_completo = datos[5]
+        nonce_div = nonce_completo.split('=')
+        nonce = nonce_div[1]
         nonce_bytes = bytes(nonce, 'utf-8')
         passwd_bytes = bytes(passwd, 'utf-8')
         m = hashlib.md5()
         m.update(passwd_bytes + nonce_bytes)
         response = m.hexdigest()
-        PETICION += "Authorization: response= " + response
-        my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
+        PETICION += "Authorization: response= " + str(response)
+        my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n')
+        hora = time.time()
+        evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
+        evento += PETICION + '\r\n'
+        log('', hora, evento)
+        data = my_socket.recv(proxy_port)
+        print('Recibido -- ', data.decode('utf-8'))
+        datosrecibidos = data.decode('utf-8')
+        datos = datosrecibidos.split()
+        hora = time.time()
+        evento = " Received from " + proxy_ip + ':' + str(proxy_port) + ':' + datosrecibidos + '\r\n'
+        log('', hora, evento)
 elif METHOD == "INVITE":
     if datos[1] == "100" and datos[4] == "180" and datos[7] == "200":
         METHOD = "ACK"
         PETICION = METHOD + " sip:" + option + " " + "SIP/2.0"
         print("Enviando: " + PETICION)
-        my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
-
+        my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n')
+        hora = time.time()
+        evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
+        evento += PETICION + '\r\n'
+        log('', hora, evento)
+elif METHOD == "BYE":
+    PETICION = "SIP/2.0 200 OK" + "\r\n" + "\r\n"
+    my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n')
 print("Terminando socket...")
 
 # Cerramos todo
