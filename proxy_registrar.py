@@ -126,13 +126,6 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 break
             list_recv = line.split()
             METHOD = list_recv[0]
-            if METHOD not in ["REGISTER", "INVITE", "BYE", "ACK"]:
-                self.wfile.write(b"SIP/2.0 405 Method Not Allowed" + b"\r\n" +
-                                 b"\r\n")
-                hora = time.time()
-                evento = " Sent to " + IP + ':' + str(PORT) + ':'
-                evento += "SIP/2.0 405 Method Not Allowed" + '\r\n'
-                log('', hora, evento)
             if METHOD == "REGISTER":
                 address_port = list_recv[1]
                 address_divided = address_port.split(':')
@@ -206,7 +199,8 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     evento += datosrecibidos + '\r\n'
                     log('', hora, evento)
                 else:
-                    self.wfile.write(bytes("SIP/2.0 404 User not found", 'utf-8'))
+                    self.wfile.write(bytes("SIP/2.0 404 User not found",
+                                     'utf-8'))
                     hora = time.time()
                     evento = " Sent to " + IP + ':' + str(PORT) + ':'
                     evento += "SIP/2.0 404 User not found" + '\r\n'
@@ -262,6 +256,13 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     evento = " Sent to " + ua_ip + ':' + str(ua_port) + ':'
                     evento += datosrecibidos + '\r\n'
                     log('', hora, evento)
+            if METHOD not in ["REGISTER", "INVITE", "BYE", "ACK"]:
+                self.wfile.write(b"SIP/2.0 405 Method Not Allowed" + b"\r\n" +
+                                 b"\r\n")
+                hora = time.time()
+                evento = " Sent to " + IP + ':' + str(PORT) + ':'
+                evento += "SIP/2.0 405 Method Not Allowed" + '\r\n'
+                log('', hora, evento)
 if __name__ == "__main__":
     serv = socketserver.UDPServer((ip_server, int(port_server)),
                                   SIPRegisterHandler)
