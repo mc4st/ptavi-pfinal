@@ -67,10 +67,20 @@ my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 my_socket.connect((proxy_ip, proxy_port))
 
+def log(formato, hora, evento):
+    fich = listXML[4][1]['path']
+    fich_log = open(fich, 'a')
+    formato = '%Y%m%d%H%M%S'
+    hora = time.gmtime(hora)
+    formato_hora = fich_log.write(time.strftime(formato, hora))
+    evento = evento.replace('\r\n', ' ')
+    fich_log.write(evento + '\r\n')
+    fich_log.close()
+
 if ua_ip == "":
     ua_ip = '127.0.0.1'
 
-# Según el tpo de método que recibamos (REGISTER, INVITE, BYE)
+# Según el tipo de método que recibamos (REGISTER, INVITE, BYE)
 if METHOD == 'REGISTER':
     # [1] porque es el diccionario y no la etiqueta
     #REGISTER sip:leonard@bigbang.org:1234 SIP/2.0
@@ -96,15 +106,23 @@ elif METHOD == 'INVITE':
 
 elif METHOD == 'BYE':
     PETICION = METHOD + " sip:" + option + " SIP/2.0\r\n\r\n"
-    
 # Contenido que vamos a enviar (similar práctica anterior)
-print("Enviando: " + PETICION)
+# Envio al log
+hora = time.time()
+evento = "Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
+evento += PETICION + '\r\n'
+log('', hora, evento)
+print(" Enviando: " + PETICION)
 my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
 data = my_socket.recv(proxy_port)
 
 print('Recibido -- ', data.decode('utf-8'))
 datosrecibidos = data.decode('utf-8')
 datos = datosrecibidos.split()
+hora = time.time()
+evento = " Received from " + proxy_ip + ':' + str(proxy_port) + ':' + datosrecibidos + '\r\n'
+log('', hora, evento)
+
 if METHOD == "REGISTER":
     if datos[1] == "401":
         METHOD = "REGISTER"
@@ -130,3 +148,6 @@ print("Terminando socket...")
 # Cerramos todo
 my_socket.close()
 print("Fin.")
+hora = time.time()
+evento = " Finishing."
+log('', hora, evento)
