@@ -107,6 +107,7 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 PETICION += "s=misesion\r\n"
                 PETICION += "t=0\r\n"
                 PETICION += "m=audio8 " + audio_port + " RTP\r\n\r\n"
+                print(PETICION)
                 self.wfile.write(bytes(PETICION, 'utf-8'))
                 hora = time.time()
                 evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
@@ -119,11 +120,13 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 evento += "SIP/2.0 200 OK" + '\r\n'
                 log('', hora, evento)
             elif METHOD == "ACK":
+
                 aEjecutar = './mp32rtp -i ' + self.dicc_rtp['ip_client']
                 aEjecutar += ' -p' + self.dicc_rtp['port_client'] + '<'
                 aEjecutar += fich_audio
                 print("Vamos a ejecutar: ", aEjecutar)
                 os.system(aEjecutar)
+                print("RTP termina")
             else:
                 self.wfile.write(b"SIP/2.0 400 Bad Request" + b"\r\n" +
                                  b"\r\n")
