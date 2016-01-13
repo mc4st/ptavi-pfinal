@@ -21,6 +21,7 @@ if len(sys.argv) == 4:
 else:
     sys.exit("Usage: client.py config method opcion")
 
+
 # Creamos extraer fichero xml
 class ExtraerXML (ContentHandler):
     def __init__(self):
@@ -66,6 +67,7 @@ proxy_port = int(listXML[3][1]['puerto'])
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 my_socket.connect((proxy_ip, proxy_port))
+
 
 def log(formato, hora, evento):
     fich = listXML[4][1]['path']
@@ -120,14 +122,15 @@ print('Recibido -- ', data.decode('utf-8'))
 datosrecibidos = data.decode('utf-8')
 datos = datosrecibidos.split()
 hora = time.time()
-evento = " Received from " + proxy_ip + ':' + str(proxy_port) + ':' + datosrecibidos + '\r\n'
+evento = " Received from " + proxy_ip + ':' + str(proxy_port) + ':'
+evento += datosrecibidos + '\r\n'
 log('', hora, evento)
 
 if METHOD == "REGISTER":
     if datos[1] == "401":
         METHOD = "REGISTER"
-        PETICION = METHOD + " sip:" + user + ":" + ua_port + ": SIP/2.0" + "\r\n"
-        PETICION += "Expires: " + option + "\r\n"
+        PETICION = METHOD + " sip:" + user + ":" + ua_port
+        PETICION += ": SIP/2.0" + "\r\n" + "Expires: " + option + "\r\n"
         nonce_completo = datos[5]
         nonce_div = nonce_completo.split('=')
         nonce = nonce_div[1]
@@ -147,7 +150,8 @@ if METHOD == "REGISTER":
         datosrecibidos = data.decode('utf-8')
         datos = datosrecibidos.split()
         hora = time.time()
-        evento = " Received from " + proxy_ip + ':' + str(proxy_port) + ':' + datosrecibidos + '\r\n'
+        evento = " Received from " + proxy_ip + ':' + str(proxy_port)
+        evento += ':' + datosrecibidos + '\r\n'
         log('', hora, evento)
 elif METHOD == "INVITE":
     if datos[1] == "100" and datos[4] == "180" and datos[7] == "200":
