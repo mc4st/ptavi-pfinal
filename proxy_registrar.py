@@ -189,7 +189,7 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                                               socket.SOCK_DGRAM)
                     my_socket.setsockopt(socket.SOL_SOCKET,
                                          socket.SO_REUSEADDR, 1)
-                    my_socket.connect((ua_ip, ua_port))
+                    my_socket.connect((ua_ip, int(ua_port)))
 
                     my_socket.send(bytes(line, 'utf-8') + b'\r\n' + b'\r\n')
                     data = my_socket.recv(ua_port)
@@ -206,10 +206,10 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     evento += datosrecibidos + '\r\n'
                     log('', hora, evento)
                 else:
-                    self.wfile.write(bytes("SIP/2.0 User not found", 'utf-8'))
+                    self.wfile.write(bytes("SIP/2.0 404 User not found", 'utf-8'))
                     hora = time.time()
                     evento = " Sent to " + IP + ':' + str(PORT) + ':'
-                    evento += "SIP/2.0 405 Method Not Allowed" + '\r\n'
+                    evento += "SIP/2.0 404 User not found" + '\r\n'
                     log('', hora, evento)
             elif METHOD == "ACK":
                 address_sip = list_recv[1]
@@ -220,7 +220,7 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
 
                 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                my_socket.connect((ua_ip, ua_port))
+                my_socket.connect((ua_ip, int(ua_port)))
                 my_socket.send(bytes(line, 'utf-8') + b'\r\n' + b'\r\n')
                 data = my_socket.recv(PORT)
                 datosrecibidos = data.decode('utf-8')
@@ -245,7 +245,7 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                                               socket.SOCK_DGRAM)
                     my_socket.setsockopt(socket.SOL_SOCKET,
                                          socket.SO_REUSEADDR, 1)
-                    my_socket.connect((ua_ip, ua_port))
+                    my_socket.connect((ua_ip, int(ua_port)))
 
                     my_socket.send(bytes(line, 'utf-8') + b'\r\n' + b'\r\n')
                     data = my_socket.recv(ua_port)
