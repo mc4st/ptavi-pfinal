@@ -93,9 +93,9 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                                  b"\r\n")
                 hora = time.time()
                 evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
-                evento += PETICION + '\r\n'
+                evento += "SIP/2.0 405 Method Not Allowed" + '\r\n'
                 log('', hora, evento)
-            elif METHOD == "INVITE":
+            if METHOD == "INVITE":
                 self.dicc_rtp['ip_client'] = list_recv[7]
                 self.dicc_rtp['port_client'] = list_recv[11]
                 self.wfile.write(b"SIP/2.0 100 Trying" + b"\r\n")
@@ -107,7 +107,6 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 PETICION += "s=misesion\r\n"
                 PETICION += "t=0\r\n"
                 PETICION += "m=audio8 " + audio_port + " RTP\r\n\r\n"
-                print(PETICION)
                 self.wfile.write(bytes(PETICION, 'utf-8'))
                 hora = time.time()
                 evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
@@ -120,13 +119,13 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 evento += "SIP/2.0 200 OK" + '\r\n'
                 log('', hora, evento)
             elif METHOD == "ACK":
-
-                aEjecutar = './mp32rtp -i ' + self.dicc_rtp['ip_client']
+                print(self.dicc_rtp['ip_client'])
+                print(self.dicc_rtp['port_client'])
+                aEjecutar = './mp32rtp -i ' + '127.0.0.1'
                 aEjecutar += ' -p' + self.dicc_rtp['port_client'] + '<'
                 aEjecutar += fich_audio
                 print("Vamos a ejecutar: ", aEjecutar)
                 os.system(aEjecutar)
-                print("RTP termina")
             else:
                 self.wfile.write(b"SIP/2.0 400 Bad Request" + b"\r\n" +
                                  b"\r\n")
