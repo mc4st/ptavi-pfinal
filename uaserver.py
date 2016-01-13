@@ -7,6 +7,7 @@ Clase (y programa principal) para un servidor de eco en UDP simple
 import socketserver
 import sys
 import os
+import time
 
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
@@ -56,6 +57,16 @@ proxy_ip = listXML[3][1]['ip']
 proxy_port = int(listXML[3][1]['puerto'])
 fich_audio = listXML[5][1]['path']
 
+def log(formato, hora, evento):
+    fich = listXML[4][1]['path']
+    fich_log = open(fich, 'a')
+    formato = '%Y%m%d%H%M%S'
+    hora = time.gmtime(hora)
+    formato_hora = fich_log.write(time.strftime(formato, hora))
+    evento = evento.replace('\r\n', ' ')
+    fich_log.write(evento + '\r\n')
+    fich_log.close()
+
 class EchoHandler(socketserver.DatagramRequestHandler):
     """
     Echo server class
@@ -76,13 +87,15 @@ class EchoHandler(socketserver.DatagramRequestHandler):
             if METHOD not in ["INVITE", "BYE", "ACK"]:
                 self.wfile.write(b"SIP/2.0 405 Method Not Allowed" + b"\r\n" +
                                  b"\r\n")
-
+                hora = time.time()
+                evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
+                evento += PETICION + '\r\n'
+                log('', hora, evento)
             elif METHOD == "INVITE":
-                print(list_recv)
                 self.dicc_rtp['ip_client'] = list_recv[7]
                 self.dicc_rtp['port_client'] = list_recv[11]
-                self.wfile.write(b"SIP/2.0 100 Trying" + b"\r\n" + b"\r\n")
-                self.wfile.write(b"SIP/2.0 180 Ring" + b"\r\n" + b"\r\n")
+                self.wfile.write(b"SIP/2.0 100 Trying" + b"\r\n")
+                self.wfile.write(b"SIP/2.0 180 Ring" + b"\r\n")
                 PETICION = "SIP/2.0 200 OK" + "\r\n" + "\r\n"
                 PETICION += "Content-Type: application/sdp\r\n\r\n"
                 PETICION += "v=0\r\n"
@@ -90,9 +103,17 @@ class EchoHandler(socketserver.DatagramRequestHandler):
                 PETICION += "s=misesion\r\n"
                 PETICION += "t=0\r\n"
                 PETICION += "m=audio8 " + audio_port + " RTP\r\n\r\n"
-                self.wfile.write(bytes(PETICION, 'utf-8') + b'\r\n' + b'\r\n')
+                self.wfile.write(bytes(PETICION, 'utf-8'))
+                hora = time.time()
+                evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
+                evento += PETICION + '\r\n'
+                log('', hora, evento)
             elif METHOD == "BYE":
                 self.wfile.write(b"SIP/2.0 200 OK" + b"\r\n" + b"\r\n")
+                hora = time.time()
+                evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
+                evento += "SIP/2.0 200 OK" + '\r\n'
+                log('', hora, evento)
             elif METHOD == "ACK":
                 aEjecutar = './mp32rtp -i ' + self.dicc_rtp['ip_client']
                 aEjecutar += ' -p' + self.dicc_rtp['port_client'] + '<'
@@ -106,4 +127,7 @@ if __name__ == "__main__":
     # Creamos servidor de eco y escuchamos
     serv = socketserver.UDPServer((ua_ip, int(ua_port)), EchoHandler)
     print("Listening...")
+    hora = time.time()
+    evento = " Listening...  "
+    log('', hora, evento)
     serv.serve_forever()
