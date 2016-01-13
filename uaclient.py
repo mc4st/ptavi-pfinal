@@ -62,11 +62,12 @@ ua_ip = listXML[1][1]['ip']
 audio_port = listXML[2][1]['puerto']
 proxy_ip = listXML[3][1]['ip']
 proxy_port = int(listXML[3][1]['puerto'])
+fich_audio = listXML[5][1]['path']
 
 # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
 my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-my_socket.connect((proxy_ip, proxy_port))
+my_socket.connect((proxy_ip, int(proxy_port)))
 
 
 def log(formato, hora, evento):
@@ -155,10 +156,19 @@ if METHOD == "REGISTER":
         log('', hora, evento)
 elif METHOD == "INVITE":
     if datos[1] == "100" and datos[4] == "180" and datos[7] == "200":
+        ip_servidor = datos[13]
+        port_servidor = datos[17]
         METHOD = "ACK"
         PETICION = METHOD + " sip:" + option + " " + "SIP/2.0"
         print("Enviando: " + PETICION)
         my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n')
+
+        aEjecutar = './mp32rtp -i ' + ip_servidor
+        aEjecutar += ' -p' + port_servidor + '<'
+        aEjecutar += fich_audio
+        print("Vamos a ejecutar: ", aEjecutar)
+        os.system(aEjecutar)
+        print("Termina")
         hora = time.time()
         evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
         evento += PETICION + '\r\n'
