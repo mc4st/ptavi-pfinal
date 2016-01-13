@@ -58,11 +58,22 @@ user = listXML[0][1]['name']
 ip_server = listXML[0][1]['ip']
 port_server = int(listXML[0][1]['puerto'])
 
+def log(formato, hora, evento):
+    fich = listXML[2][1]['path']
+    fich_log = open(fich, 'a')
+    formato = '%Y%m%d%H%M%S'
+    hora = time.gmtime(hora)
+    formato_hora = fich_log.write(time.strftime(formato, hora))
+    evento = evento.replace('\r\n', ' ')
+    fich_log.write(evento + '\r\n')
+    fich_log.close()
+
 class SIPRegisterHandler(socketserver.DatagramRequestHandler):
     """
     Echo server class
     """
     DiccServer = {}
+    DiccNonce = {}
     def register2json(self):
         with open("register.json", 'w') as fichero_json:
             json.dump(self.DiccServer, fichero_json)
@@ -114,6 +125,10 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
             if METHOD not in ["REGISTER", "INVITE", "BYE", "ACK"]:
                 self.wfile.write(b"SIP/2.0 405 Method Not Allowed" + b"\r\n" +
                                  b"\r\n")
+                hora = time.time()
+                evento = " Sent to " + IP + ':' + str(PORT) + ':'
+                evento += "SIP/2.0 405 Method Not Allowed" + '\r\n'
+                log('', hora, evento)
             if METHOD == "REGISTER":
                 address_port = list_recv[1]
                 address_divided = address_port.split(':')
@@ -121,33 +136,38 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 port = address_divided[2]
                 expires = list_recv[4]
                 nonce = random.randint(100000000000000000000, 999999999999999999999)
-                print(list_recv)
                 if len(list_recv) == 5:
+                    time_now = int(time.time()) + int(expires)
+                    time_expires = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time_now))
+                    self.DiccServer[address] = [str(IP), port, expires, str(time_expires)]
+                    PETICION = "SIP/2.0 401 Unauthorized" + "\r\n"
+                    PETICION += "WWW Authenticate: nonce=" + str(nonce)
+                    self.wfile.write(bytes(PETICION, 'utf-8') + b"\r\n")
+                    self.DiccNonce[address] = nonce
+                    hora = time.time()
+                    evento = " Sent to " + IP + ':' + str(PORT) + ':'
+                    evento += PETICION + '\r\n'
+                    log('', hora, evento)
                     if int(expires) == 0:
                         del self.DiccServer[address]
-                    else:
-                        time_now = int(time.time()) + int(expires)
-                        time_expires = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time_now))
-                        self.DiccServer[address] = [str(IP), port, expires, str(time_expires)]
-                        PETICION = "SIP/2.0 401 Unauthorized" + "\r\n"
-                        PETICION += "WWW Authenticate: nonce=" + str(nonce) + "\r\n"
-                        self.wfile.write(bytes(PETICION, 'utf-8') + b"\r\n" + b"\r\n")
                 if len(list_recv) == 8:
                     #comparar response que llega del client con el response creado por pr
                     response_recv = list_recv[7]
-                    print(response_recv)
                     passwd_fich = self.SearchPasswd(address)
-                    passwd = bytes(str(passwd_fich))
-                    nonce_bytes = bytes(nonce)
-                    print(passwd)
+                    nonce_env = str(self.DiccNonce[address])
+                    nonce_bytes = bytes(nonce_env, 'utf-8')
+                    passwd = bytes(passwd_fich, 'utf-8')
                     m = hashlib.md5()
-                    m.update(passwd + nonce)
+                    m.update(passwd + nonce_bytes)
                     response_new = m.hexdigest()
-                    print(response_new)
-
-                self.wfile.write(b"SIP/2.0 200 OK" + b"\r\n" + b"\r\n")
-                self.deleteDiccServer()
-                self.register2json()
+                    if response_recv == response_new:
+                        self.wfile.write(b"SIP/2.0 200 OK" + b"\r\n")
+                        hora = time.time()
+                        evento = " Sent to " + IP + ':' + str(PORT) + ':'
+                        evento += "SIP/2.0 200 OK" + '\r\n'
+                        log('', hora, evento)
+                        self.deleteDiccServer()
+                        self.register2json()
             elif METHOD == "INVITE":
                 address_sip = list_recv[1]
                 address_divided = address_sip.split(':')
@@ -166,8 +186,20 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     datosrecibidos = data.decode('utf-8')
                     datos = datosrecibidos.split()
                     self.wfile.write(bytes(datosrecibidos, 'utf-8') + b'\r\n' + b'\r\n')
+                    hora = time.time()
+                    evento = " Received from " + ua_ip + ':' + str(ua_port)
+                    evento += ':' + datosrecibidos + '\r\n'
+                    log('', hora, evento)
+                    hora = time.time()
+                    evento = " Sent to " + IP + ':' + str(PORT) + ':'
+                    evento += datosrecibidos + '\r\n'
+                    log('', hora, evento)
                 else:
                     self.wfile.write(bytes("SIP/2.0 User not found", 'utf-8'))
+                    hora = time.time()
+                    evento = " Sent to " + IP + ':' + str(PORT) + ':'
+                    evento += "SIP/2.0 405 Method Not Allowed" + '\r\n'
+                    log('', hora, evento)
             elif METHOD == "ACK":
                 address_sip = list_recv[1]
                 address_divided = address_sip.split(':')
@@ -179,6 +211,17 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 my_socket.connect((ua_ip, ua_port))
                 my_socket.send(bytes(line, 'utf-8') + b'\r\n' + b'\r\n')
+                data = my_socket.recv(PORT)
+                datosrecibidos = data.decode('utf-8')
+
+                hora = time.time()
+                evento = " Received from " + IP + ':' + str(PORT)
+                evento += ':' + datosrecibidos + '\r\n'
+                log('', hora, evento)
+                hora = time.time()
+                evento = " Sent to " + ua_ip + ':' + str(ua_port) + ':'
+                evento += datosrecibidos + '\r\n'
+                log('', hora, evento)
             elif METHOD == "BYE":
                 address_sip = list_recv[1]
                 address_divided = address_sip.split(':')
@@ -197,7 +240,14 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     datosrecibidos = data.decode('utf-8')
                     datos = datosrecibidos.split()
                     self.wfile.write(bytes(datosrecibidos, 'utf-8') + b'\r\n' + b'\r\n')
-
+                    hora = time.time()
+                    evento = " Received from " + IP + ':' + str(PORT)
+                    evento += ':' + datosrecibidos + '\r\n'
+                    log('', hora, evento)
+                    hora = time.time()
+                    evento = " Sent to " + ua_ip + ':' + str(ua_port) + ':'
+                    evento += datosrecibidos + '\r\n'
+                    log('', hora, evento)
 if __name__ == "__main__":
     serv = socketserver.UDPServer((ip_server, int(port_server)), SIPRegisterHandler)
     print("Server MiServidorBingBang listening at port 5555...")
