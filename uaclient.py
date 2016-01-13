@@ -162,20 +162,16 @@ elif METHOD == "INVITE":
         PETICION = METHOD + " sip:" + option + " " + "SIP/2.0"
         print("Enviando: " + PETICION)
         my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n')
-
-        aEjecutar = './mp32rtp -i ' + ip_servidor
+        aEjecutar = './mp32rtp -i ' + '127.0.0.1'
         aEjecutar += ' -p' + port_servidor + '<'
         aEjecutar += fich_audio
         print("Vamos a ejecutar: ", aEjecutar)
         os.system(aEjecutar)
-        print("Termina")
         hora = time.time()
         evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
-        evento += PETICION + '\r\n'
+        evento += aEjecutar + '\r\n'
         log('', hora, evento)
-elif METHOD == "BYE":
-    PETICION = "SIP/2.0 200 OK" + "\r\n" + "\r\n"
-    my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n')
+
 print("Terminando socket...")
 
 # Cerramos todo
