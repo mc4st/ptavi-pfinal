@@ -19,6 +19,7 @@ if len(sys.argv) == 2:
 else:
     sys.exit('Usage: python3 proxy_registrar.py config')
 
+
 class ExtraerXML (ContentHandler):
     def __init__(self):
         self.taglist = []
@@ -58,6 +59,7 @@ user = listXML[0][1]['name']
 ip_server = listXML[0][1]['ip']
 port_server = int(listXML[0][1]['puerto'])
 
+
 def log(formato, hora, evento):
     fich = listXML[2][1]['path']
     fich_log = open(fich, 'a')
@@ -68,12 +70,14 @@ def log(formato, hora, evento):
     fich_log.write(evento + '\r\n')
     fich_log.close()
 
+
 class SIPRegisterHandler(socketserver.DatagramRequestHandler):
     """
     Echo server class
     """
     DiccServer = {}
     DiccNonce = {}
+
     def register2json(self):
         with open("register.json", 'w') as fichero_json:
             json.dump(self.DiccServer, fichero_json)
@@ -110,7 +114,7 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
 
     def handle(self):
         IP = self.client_address[0]
-        PORT =  self.client_address[1]
+        PORT = self.client_address[1]
         #if len(self.DiccServer) == 0:
         #    self.json2register()
         #    self.wfile.write(b"SIP/2.0 200 OK" + b"\r\n" + b"\r\n")
@@ -135,11 +139,15 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 address = address_divided[1]
                 port = address_divided[2]
                 expires = list_recv[4]
-                nonce = random.randint(100000000000000000000, 999999999999999999999)
+                nonce = random.randint(100000000000000000000,
+                                       999999999999999999999)
                 if len(list_recv) == 5:
                     time_now = int(time.time()) + int(expires)
-                    time_expires = time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(time_now))
-                    self.DiccServer[address] = [str(IP), port, expires, str(time_expires)]
+                    formato = '%Y-%m-%d %H:%M:%S'
+                    hora = time.gmtime(time_now)
+                    time_expires = time.strftime(formato, hora)
+                    self.DiccServer[address] = [str(IP), port, expires,
+                                                str(time_expires)]
                     PETICION = "SIP/2.0 401 Unauthorized" + "\r\n"
                     PETICION += "WWW Authenticate: nonce=" + str(nonce)
                     self.wfile.write(bytes(PETICION, 'utf-8') + b"\r\n")
@@ -151,7 +159,8 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     if int(expires) == 0:
                         del self.DiccServer[address]
                 if len(list_recv) == 8:
-                    #comparar response que llega del client con el response creado por pr
+                    #comparar response que llega del client con el response
+                    #creado por pr
                     response_recv = list_recv[7]
                     passwd_fich = self.SearchPasswd(address)
                     nonce_env = str(self.DiccNonce[address])
@@ -175,9 +184,11 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 if address in self.DiccServer:
                     ua_ip = self.DiccServer[address][0]
                     ua_port = int(self.DiccServer[address][1])
-                    # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
-                    my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+                    my_socket = socket.socket(socket.AF_INET,
+                                              socket.SOCK_DGRAM)
+                    my_socket.setsockopt(socket.SOL_SOCKET,
+                                         socket.SO_REUSEADDR, 1)
                     my_socket.connect((ua_ip, ua_port))
 
                     my_socket.send(bytes(line, 'utf-8') + b'\r\n' + b'\r\n')
@@ -185,7 +196,7 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     print('Recibido -- ', data.decode('utf-8'))
                     datosrecibidos = data.decode('utf-8')
                     datos = datosrecibidos.split()
-                    self.wfile.write(bytes(datosrecibidos, 'utf-8') + b'\r\n' + b'\r\n')
+                    self.wfile.write(bytes(datosrecibidos, 'utf-8') + b'\r\n')
                     hora = time.time()
                     evento = " Received from " + ua_ip + ':' + str(ua_port)
                     evento += ':' + datosrecibidos + '\r\n'
@@ -229,9 +240,11 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                 if address in self.DiccServer:
                     ua_ip = self.DiccServer[address][0]
                     ua_port = int(self.DiccServer[address][1])
-                    # Creamos el socket, lo configuramos y lo atamos a un servidor/puerto
-                    my_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                    my_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+                    my_socket = socket.socket(socket.AF_INET,
+                                              socket.SOCK_DGRAM)
+                    my_socket.setsockopt(socket.SOL_SOCKET,
+                                         socket.SO_REUSEADDR, 1)
                     my_socket.connect((ua_ip, ua_port))
 
                     my_socket.send(bytes(line, 'utf-8') + b'\r\n' + b'\r\n')
@@ -239,7 +252,8 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     print('Recibido -- ', data.decode('utf-8'))
                     datosrecibidos = data.decode('utf-8')
                     datos = datosrecibidos.split()
-                    self.wfile.write(bytes(datosrecibidos, 'utf-8') + b'\r\n' + b'\r\n')
+                    self.wfile.write(bytes(datosrecibidos, 'utf-8')
+                                     + b'\r\n' + b'\r\n')
                     hora = time.time()
                     evento = " Received from " + IP + ':' + str(PORT)
                     evento += ':' + datosrecibidos + '\r\n'
@@ -249,7 +263,8 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     evento += datosrecibidos + '\r\n'
                     log('', hora, evento)
 if __name__ == "__main__":
-    serv = socketserver.UDPServer((ip_server, int(port_server)), SIPRegisterHandler)
+    serv = socketserver.UDPServer((ip_server, int(port_server)),
+                                  SIPRegisterHandler)
     print("Server MiServidorBingBang listening at port 5555...")
     serv.allow_reuse_address = True
     serv.serve_forever()
