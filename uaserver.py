@@ -17,6 +17,7 @@ if len(sys.argv) == 2:
 else:
     sys.exit('Usage: python3 uaserver.py config')
 
+
 class ExtraerXML (ContentHandler):
     def __init__(self):
         self.taglist = []
@@ -57,6 +58,7 @@ proxy_ip = listXML[3][1]['ip']
 proxy_port = int(listXML[3][1]['puerto'])
 fich_audio = listXML[5][1]['path']
 
+
 def log(formato, hora, evento):
     fich = listXML[4][1]['path']
     fich_log = open(fich, 'a')
@@ -67,11 +69,13 @@ def log(formato, hora, evento):
     fich_log.write(evento + '\r\n')
     fich_log.close()
 
+
 class EchoHandler(socketserver.DatagramRequestHandler):
     """
     Echo server class
     """
-    dicc_rtp = {'ip_client': '','port_client': 0}
+    dicc_rtp = {'ip_client': '', 'port_client': 0}
+
     def handle(self):
         # Escribe dirección y puerto del cliente (de tupla client_address)
         while 1:
