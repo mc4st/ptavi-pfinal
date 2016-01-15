@@ -132,7 +132,7 @@ if METHOD == "REGISTER":
         METHOD = "REGISTER"
         PETICION = METHOD + " sip:" + user + ":" + ua_port
         PETICION += ": SIP/2.0" + "\r\n" + "Expires: " + option + "\r\n"
-        nonce_completo = datos[5]
+        nonce_completo = datos[6]
         nonce_div = nonce_completo.split('=')
         nonce = nonce_div[1]
         nonce_bytes = bytes(nonce, 'utf-8')
@@ -140,7 +140,7 @@ if METHOD == "REGISTER":
         m = hashlib.md5()
         m.update(passwd_bytes + nonce_bytes)
         response = m.hexdigest()
-        PETICION += "Authorization: response= " + str(response)
+        PETICION += "Authorization: Digest response= " + str(response)
         my_socket.send(bytes(PETICION, 'utf-8') + b'\r\n')
         hora = time.time()
         evento = " Sent to " + proxy_ip + ':' + str(proxy_port) + ':'
