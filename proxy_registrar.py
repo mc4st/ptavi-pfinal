@@ -142,7 +142,7 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     self.DiccServer[address] = [str(IP), port, expires,
                                                 str(time_expires)]
                     PETICION = "SIP/2.0 401 Unauthorized" + "\r\n"
-                    PETICION += "WWW Authenticate: nonce=" + str(nonce)
+                    PETICION += "WWW Authenticate: Digest nonce=" + str(nonce)
                     self.wfile.write(bytes(PETICION, 'utf-8') + b"\r\n")
                     self.DiccNonce[address] = nonce
                     hora = time.time()
@@ -151,10 +151,10 @@ class SIPRegisterHandler(socketserver.DatagramRequestHandler):
                     log('', hora, evento)
                     if int(expires) == 0:
                         del self.DiccServer[address]
-                if len(list_recv) == 8:
+                if len(list_recv) == 9:
                     #comparar response que llega del client con el response
                     #creado por pr
-                    response_recv = list_recv[7]
+                    response_recv = list_recv[8]
                     passwd_fich = self.SearchPasswd(address)
                     nonce_env = str(self.DiccNonce[address])
                     nonce_bytes = bytes(nonce_env, 'utf-8')
